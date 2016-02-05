@@ -8,9 +8,14 @@ use std::path;
 use std::os::unix::fs::DirBuilderExt;
 use crypto::sha1::Sha1;
 use crypto::digest::Digest;
-use std::error::Error;
+use std::error::Error as ErrorTrait;
 use std::str::FromStr;
 use std::string::ToString;
+use std::fmt::Display;
+use std::fmt::Debug;
+use std::fmt::Formatter;
+use std::any::Any;
+use std::fmt::Error as FmtError;
 
 #[cfg(test)]
 mod test {
@@ -41,24 +46,32 @@ mod test {
     }
 }
 
-pub trait Cache<T: Cacheable<U>, U: Error> {
-    fn fetch(&mut self, key: &String) -> Result<Option<T>, U>;
-    fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), U>;
-    fn delete(&mut self, key: &String) -> Result<(), U>;
-    fn clear(&mut self) -> Result<(), U>;
+pub trait Cacheable: Sized {
+    type ToError;
+    type FromError;
+    fn to_cache(&self) -> Result<String, Self::ToError>;
+    fn from_cache(string: &String) -> Result<Self, Self::FromError>;
 }
 
-pub trait Cacheable<U: Error>: Sized {
-    fn to_cache(&self) -> Result<String, U>;
-    fn from_cache(string: &String) -> Result<Self, U>;
+pub trait Cache<T: Cacheable> {
+    type FetchError;
+    type SaveError;
+    type DeleteError;
+    type ClearError;
+    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::FetchError>;
+    fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::SaveError>;
+    fn delete(&mut self, key: &String) -> Result<(), Self::DeleteError>;
+    fn clear(&mut self) -> Result<(), Self::ClearError>;
 }
 
-impl<T: FromStr + ToString + Sized> Cacheable<<T as FromStr>::Err> for T where <T as FromStr>::Err: Error {
-    fn to_cache(&self) -> Result<String, <T as FromStr>::Err> {
+impl<T: FromStr + ToString + Sized> Cacheable for T {
+    type ToError = ();
+    type FromError = T::Err;
+    fn to_cache(&self) -> Result<String, Self::ToError> {
         Ok(self.to_string())
     }
 
-    fn from_cache(string: &String) -> Result<Self, <T as FromStr>::Err> {
+    fn from_cache(string: &String) -> Result<Self, Self::FromError> {
         T::from_str(&string[..])
     }
 }
@@ -68,8 +81,8 @@ pub struct HashMapCache {
 }
 
 struct CacheEntry {
-    string: String,
-    expires: Tm
+    pub string: String,
+    pub expires: Tm
 }
 
 impl CacheEntry {
@@ -86,8 +99,8 @@ impl HashMapCache {
     }
 }
 
-impl<T: Cacheable<U>, U: Error> Cache<T, U> for HashMapCache {
-    fn fetch(&mut self, key: &String) -> Result<Option<T>, U> {
+impl<T: Cacheable> Cache<T> for HashMapCache {
+    fn fetch<U>(&mut self, key: &String) -> Result<Option<T>, U> {
         Ok(if let Some(entry) = self.hash_map.get(key) {
             if entry.expired() {
                 None
@@ -99,7 +112,7 @@ impl<T: Cacheable<U>, U: Error> Cache<T, U> for HashMapCache {
         })
     }
 
-    fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), U> {
+    fn save<U>(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), U> {
         self.hash_map.insert(
             key.clone(),
             CacheEntry {
@@ -110,12 +123,12 @@ impl<T: Cacheable<U>, U: Error> Cache<T, U> for HashMapCache {
         Ok(())
     }
 
-    fn delete(&mut self, key: &String) -> Result<(), U> {
+    fn delete<U>(&mut self, key: &String) -> Result<(), U> {
         self.hash_map.remove(key);
         Ok(())
     }
 
-    fn clear(&mut self) -> Result<(), U> {
+    fn clear<U>(&mut self) -> Result<(), U> {
         self.hash_map.clear();
         Ok(())
     }
@@ -123,21 +136,21 @@ impl<T: Cacheable<U>, U: Error> Cache<T, U> for HashMapCache {
 
 pub struct NullCache;
 
-impl<T: Cacheable<U>, U: Error> Cache<T, U> for NullCache {
+impl<T: Cacheable> Cache<T> for NullCache {
 
-    fn fetch(&mut self, _: &String) -> Result<Option<T>, U> {
+    fn fetch<U>(&mut self, _: &String) -> Result<Option<T>, U> {
         Ok(None)
     }
 
-    fn save(&mut self, _: &String, _: &T, _: Duration) -> Result<(), U> {
+    fn save<U>(&mut self, _: &String, _: &T, _: Duration) -> Result<(), U> {
         Ok(())
     }
 
-    fn delete(&mut self, _: &String) -> Result<(), U> {
+    fn delete<U>(&mut self, _: &String) -> Result<(), U> {
         Ok(())
     }
 
-    fn clear(&mut self) -> Result<(), U> {
+    fn clear<U>(&mut self) -> Result<(), U> {
         Ok(())
     }
 }
@@ -181,7 +194,7 @@ impl FilesystemCache {
     }
 }
 
-//impl<T: Cacheable, U: Error> Cache<T, U> for FilesystemCache {
+//impl<T: Cacheable, U: ErrorTrait> Cache<T, U> for FilesystemCache {
 //    fn fetch(&mut self, key: &String) -> Result<Option<T>, U> {
 //        let path = self.get_file_path(key);
 //
