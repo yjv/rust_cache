@@ -47,31 +47,26 @@ mod test {
 }
 
 pub trait Cacheable: Sized {
-    type ToError;
-    type FromError;
-    fn to_cache(&self) -> Result<String, Self::ToError>;
-    fn from_cache(string: &String) -> Result<Self, Self::FromError>;
+    type Error;
+    fn to_cache(&self) -> Result<String, Self::Error>;
+    fn from_cache(string: &String) -> Result<Self, Self::Error>;
 }
 
 pub trait Cache<T: Cacheable> {
-    type FetchError;
-    type SaveError;
-    type DeleteError;
-    type ClearError;
-    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::FetchError>;
-    fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::SaveError>;
-    fn delete(&mut self, key: &String) -> Result<(), Self::DeleteError>;
-    fn clear(&mut self) -> Result<(), Self::ClearError>;
+    type Error;
+    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::Error>;
+    fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::Error>;
+    fn delete(&mut self, key: &String) -> Result<(), Self::Error>;
+    fn clear(&mut self) -> Result<(), Self::Error>;
 }
 
 impl<T: FromStr + ToString + Sized> Cacheable for T {
-    type ToError = ();
-    type FromError = T::Err;
-    fn to_cache(&self) -> Result<String, Self::ToError> {
+    type Error = T::Err;
+    fn to_cache(&self) -> Result<String, Self::Error> {
         Ok(self.to_string())
     }
 
-    fn from_cache(string: &String) -> Result<Self, Self::FromError> {
+    fn from_cache(string: &String) -> Result<Self, Self::Error> {
         T::from_str(&string[..])
     }
 }
@@ -100,7 +95,8 @@ impl HashMapCache {
 }
 
 impl<T: Cacheable> Cache<T> for HashMapCache {
-    fn fetch<U>(&mut self, key: &String) -> Result<Option<T>, U> {
+    type Error = T::Error;
+    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::Error> {
         Ok(if let Some(entry) = self.hash_map.get(key) {
             if entry.expired() {
                 None
@@ -112,7 +108,7 @@ impl<T: Cacheable> Cache<T> for HashMapCache {
         })
     }
 
-    fn save<U>(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), U> {
+    fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::Error> {
         self.hash_map.insert(
             key.clone(),
             CacheEntry {
@@ -123,12 +119,12 @@ impl<T: Cacheable> Cache<T> for HashMapCache {
         Ok(())
     }
 
-    fn delete<U>(&mut self, key: &String) -> Result<(), U> {
+    fn delete(&mut self, key: &String) -> Result<(), Self::Error> {
         self.hash_map.remove(key);
         Ok(())
     }
 
-    fn clear<U>(&mut self) -> Result<(), U> {
+    fn clear(&mut self) -> Result<(), Self::Error> {
         self.hash_map.clear();
         Ok(())
     }
@@ -137,20 +133,20 @@ impl<T: Cacheable> Cache<T> for HashMapCache {
 pub struct NullCache;
 
 impl<T: Cacheable> Cache<T> for NullCache {
-
-    fn fetch<U>(&mut self, _: &String) -> Result<Option<T>, U> {
+    type Error = ();
+    fn fetch(&mut self, _: &String) -> Result<Option<T>, Self::Error> {
         Ok(None)
     }
 
-    fn save<U>(&mut self, _: &String, _: &T, _: Duration) -> Result<(), U> {
+    fn save(&mut self, _: &String, _: &T, _: Duration) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn delete<U>(&mut self, _: &String) -> Result<(), U> {
+    fn delete(&mut self, _: &String) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn clear<U>(&mut self) -> Result<(), U> {
+    fn clear(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
 }
