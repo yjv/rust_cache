@@ -5,4 +5,10 @@ authors = ["Yosef Deray <yosefderay770@gmail.com>"]
 
 [dependencies]
 time = "0.1"
-rust-crypto = "0.2.34"
+
+rust-crypto = { version = "0.2.34", optional = true }
+
+[features]
+default = ["hash_map"]
+hash_map = []
+filesystem = ["rust-crypto"]

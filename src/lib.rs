@@ -1,9 +1,10 @@
 
 #[cfg(test)]
 mod test {
+    extern crate time;
     use super::hash_map::HashMapCache;
     use super::common::Cache;
-    use time::Duration;
+    use self::time::Duration;
     use super::common::NullCache;
 
     #[test]
@@ -29,5 +30,7 @@ mod test {
 }
 
 pub mod common;
+#[cfg(feature = "hash_map")]
 pub mod hash_map;
+#[cfg(feature = "filesystem")]
 pub mod filesystem;
