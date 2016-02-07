@@ -2,6 +2,7 @@ extern crate time;
 use self::time::Duration;
 use self::time::Tm;
 use self::time::Timespec;
+use self::time::now;
 use std::str::FromStr;
 use std::convert::From;
 
@@ -37,6 +38,12 @@ pub struct CacheEntry {
 }
 
 impl CacheEntry {
+    pub fn new(string: String, ttl: Duration) -> Self {
+        CacheEntry {
+            string: string,
+            expires: time::now() + ttl
+        }
+    }
     pub fn expired(&self) -> bool {
         time::now_utc() > self.expires
     }

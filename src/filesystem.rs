@@ -13,6 +13,7 @@ use common::ParseCacheEntryError;
 use self::time::Duration;
 use std::convert::From;
 use std::io::Read;
+use std::io::Write;
 
 pub struct FilesystemCache {
     directory: path::PathBuf,
@@ -25,7 +26,7 @@ pub enum Error<T> {
     DirectoryNotWritable,
     Io(::std::io::Error),
     CacheEntryFailedToParse(ParseCacheEntryError),
-    CacheSerializationFailed(T)
+    CacheSerializationFailure(T)
 }
 
 impl<T> From<::std::io::Error> for Error<T> {
@@ -95,10 +96,19 @@ impl<T: Cacheable> Cache<T> for FilesystemCache {
             return Ok(None);
         }
 
-        Ok(Some(try!(T::from_cache(&entry.string).map_err(Error::CacheSerializationFailed))))
+        Ok(Some(try!(T::from_cache(&entry.string).map_err(Error::CacheSerializationFailure))))
     }
 
     fn save(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), Self::Error> {
+        let path = self.get_file_path(key);
+        let mut tmp_path = path.clone();
+        let mut new_file_name = tmp_path.file_name().unwrap().to_owned();
+        new_file_name.push("-new");
+        tmp_path.set_file_name(new_file_name);
+        let mut file = try!(fs::OpenOptions::new().create(true).write(true).create(true).truncate(true).open(tmp_path));
+        let entry = CacheEntry::new(try!(value.to_cache().map_err(Error::CacheSerializationFailure)), ttl);
+        let _ = try!(file.write(&entry.to_string().into_bytes()));
+
         Ok(())
     }
 
