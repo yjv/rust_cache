@@ -11,8 +11,12 @@ pub struct FilesystemCache {
     umask: u16
 }
 
+pub enum Error {
+    DirectoryNotWritable
+}
+
 impl FilesystemCache {
-    pub fn new(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, String> {
+    pub fn new(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error> {
         let path = path::Path::new(&directory[..]);
 
         if !path.is_dir() {
@@ -20,7 +24,7 @@ impl FilesystemCache {
         }
 
         if path.metadata().unwrap().permissions().readonly() {
-            Err("directory is read only".to_string())
+            Err(DirectoryNotWritable)
         } else {
             Ok(FilesystemCache {
                 directory: try!(path.canonicalize().map_err(|e| format!("{}", e))),
@@ -44,30 +48,32 @@ impl FilesystemCache {
     }
 }
 
-//impl<T: Cacheable, U: ErrorTrait> Cache<T, U> for FilesystemCache {
-//    fn fetch(&mut self, key: &String) -> Result<Option<T>, U> {
-//        let path = self.get_file_path(key);
-//
-//        if !path.is_file() {
-//            return Ok(None);
-//        }
-//
-//        let file = try!(fs::File::open(path));
-//        let string = String::new();
-//        try!(file.read_to_string(&mut string));
-//        let parts: Vec<String> = string.splitn(2, '\n');
+impl<T: Cacheable> Cache<T> for FilesystemCache {
+    type Error = Error;
+    fn fetch(&mut self, key: &String) -> Result<Option<T>, U> {
+        let path = self.get_file_path(key);
+
+        if !path.is_file() {
+            return Ok(None);
+        }
+
+        let file = try!(fs::File::open(path));
+        let string = String::new();
+        try!(file.read_to_string(&mut string));
+        let parts: Vec<String> = string.splitn(2, '\n');
+        not_implemented!();
 //        let entry =
-//    }
-//
-//    fn save(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), U> {
-//        Ok(())
-//    }
-//
-//    fn delete(&mut self, key: &String) -> Result<(), U> {
-//        Ok(())
-//    }
-//
-//    fn clear(&mut self) -> Result<(), U> {
-//        Ok(())
-//    }
-//}
+    }
+
+    fn save(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), U> {
+        Ok(())
+    }
+
+    fn delete(&mut self, key: &String) -> Result<(), U> {
+        Ok(())
+    }
+
+    fn clear(&mut self) -> Result<(), U> {
+        Ok(())
+    }
+}
