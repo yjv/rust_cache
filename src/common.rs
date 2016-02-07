@@ -59,3 +59,19 @@ impl<T: Cacheable> Cache<T> for NullCache {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::time::Duration;
+    use super::NullCache;
+    use super::Cache;
+
+    #[test]
+    fn null_cache() {
+        let mut cache = NullCache;
+        assert_eq!(Ok(()), cache.save(&"key2".to_string(), &"value1".to_string(), Duration::seconds(34)));
+        assert_eq!(Ok(None), Cache::<String>::fetch(&mut cache, &"key1".to_string()));
+        assert_eq!(Ok(()), Cache::<String>::delete(&mut cache, &"key3".to_string()));
+        assert_eq!(Ok(()), Cache::<String>::clear(&mut cache));
+    }
+}

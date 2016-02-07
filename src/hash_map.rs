@@ -52,3 +52,22 @@ impl<T: Cacheable> Cache<T> for HashMapCache {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::HashMapCache;
+    use super::time::Duration;
+    use super::super::common::Cache;
+
+    #[test]
+    fn string_hash_map() {
+        let value1: String = "hello".to_string();
+        let value2: String = "goodbye".to_string();
+        let mut cache = HashMapCache::new();
+        let _ = cache.save(&"key1".to_string(), &value1, Duration::seconds(34));
+        let _ = cache.save(&"key2".to_string(), &value2, Duration::weeks(12));
+        assert_eq!(value1, Cache::<String>::fetch(&mut cache, &"key1".to_string()).unwrap().unwrap());
+        assert_eq!(value2, Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap().unwrap());
+        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key3".to_string()).unwrap());
+    }
+}
