@@ -12,3 +12,4 @@ rust-crypto = { version = "0.2.34", optional = true }
 default = ["hash_map"]
 hash_map = []
 filesystem = ["rust-crypto"]
+all = ["hash_map", "filesystem"]

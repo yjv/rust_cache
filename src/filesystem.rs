@@ -1,9 +1,18 @@
 extern crate crypto;
+extern crate time;
 use std::fs;
 use std::path;
 use std::os::unix::fs::DirBuilderExt;
 use self::crypto::sha1::Sha1;
 use self::crypto::digest::Digest;
+use std::str::FromStr;
+use common::Cacheable;
+use common::Cache;
+use common::CacheEntry;
+use common::ParseCacheEntryError;
+use self::time::Duration;
+use std::convert::From;
+use std::io::Read;
 
 pub struct FilesystemCache {
     directory: path::PathBuf,
@@ -11,23 +20,43 @@ pub struct FilesystemCache {
     umask: u16
 }
 
-pub enum Error {
-    DirectoryNotWritable
+pub enum Error<T> {
+    ExistsButIsNotDirectory,
+    DirectoryNotWritable,
+    Io(::std::io::Error),
+    CacheEntryFailedToParse(ParseCacheEntryError),
+    CacheSerializationFailed(T)
+}
+
+impl<T> From<::std::io::Error> for Error<T> {
+    fn from(error: ::std::io::Error) -> Self {
+        Error::Io(error)
+    }
+}
+
+impl<T> From<ParseCacheEntryError> for Error<T> {
+    fn from(error: ParseCacheEntryError) -> Self {
+        Error::CacheEntryFailedToParse(error)
+    }
 }
 
 impl FilesystemCache {
-    pub fn new(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error> {
+    pub fn new<T>(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error<T>> {
         let path = path::Path::new(&directory[..]);
 
+        if path.exists() && !path.is_dir() {
+            return Err(Error::ExistsButIsNotDirectory);
+        }
+
         if !path.is_dir() {
-            let _ = try!(fs::DirBuilder::new().recursive(true).mode(umask).create(directory.clone()).map_err(|e| format!("{}", e)));
+            let _ = try!(fs::DirBuilder::new().recursive(true).mode(umask).create(directory.clone()));
         }
 
         if path.metadata().unwrap().permissions().readonly() {
-            Err(DirectoryNotWritable)
+            Err(Error::DirectoryNotWritable)
         } else {
             Ok(FilesystemCache {
-                directory: try!(path.canonicalize().map_err(|e| format!("{}", e))),
+                directory: path.canonicalize().unwrap(),
                 extension: extension,
                 umask: umask
             })
@@ -49,31 +78,51 @@ impl FilesystemCache {
 }
 
 impl<T: Cacheable> Cache<T> for FilesystemCache {
-    type Error = Error;
-    fn fetch(&mut self, key: &String) -> Result<Option<T>, U> {
+    type Error = Error<<T as Cacheable>::Error>;
+    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::Error> {
         let path = self.get_file_path(key);
 
         if !path.is_file() {
             return Ok(None);
         }
 
-        let file = try!(fs::File::open(path));
-        let string = String::new();
+        let mut file = try!(fs::File::open(path));
+        let mut string = String::new();
         try!(file.read_to_string(&mut string));
-        let parts: Vec<String> = string.splitn(2, '\n');
-        not_implemented!();
-//        let entry =
+        let entry = try!(CacheEntry::from_str(&string[..]));
+
+        if entry.expired() {
+            return Ok(None);
+        }
+
+        Ok(Some(try!(T::from_cache(&entry.string).map_err(Error::CacheSerializationFailed))))
     }
 
-    fn save(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), U> {
+    fn save(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn delete(&mut self, key: &String) -> Result<(), U> {
-        Ok(())
+    fn delete(&mut self, key: &String) -> Result<(), Self::Error> {
+        let path = self.get_file_path(key);
+
+        if !path.is_file() {
+            return Ok(());
+        }
+
+        Ok(try!(fs::remove_file(path)))
     }
 
-    fn clear(&mut self) -> Result<(), U> {
+    fn clear(&mut self) -> Result<(), Self::Error> {
+        for child in try!(fs::read_dir(self.directory.clone())) {
+            let child = try!(child).path();
+            let stat = try!(fs::symlink_metadata(&*child));
+            if stat.is_dir() {
+                try!(fs::remove_dir_all(&*child));
+            } else {
+                try!(fs::remove_file(&*child));
+            }
+        }
+
         Ok(())
     }
 }
