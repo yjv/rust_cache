@@ -2,7 +2,10 @@ extern crate crypto;
 extern crate time;
 use std::fs;
 use std::path;
+#[cfg(all(unix))]
 use std::os::unix::fs::DirBuilderExt;
+#[cfg(all(unix))]
+use std::os::unix::fs::OpenOptionsExt;
 use self::crypto::sha1::Sha1;
 use self::crypto::digest::Digest;
 use std::str::FromStr;
@@ -50,7 +53,12 @@ impl FilesystemCache {
         }
 
         if !path.is_dir() {
-            let _ = try!(fs::DirBuilder::new().recursive(true).mode(umask).create(directory.clone()));
+            let mut builder = fs::DirBuilder::new();
+
+            if cfg!(all(unix)) {
+                builder.mode(0777 & !umask);
+            }
+            try!(builder.recursive(true).create(directory.clone()));
         }
 
         if path.metadata().unwrap().permissions().readonly() {
@@ -105,7 +113,11 @@ impl<T: Cacheable> Cache<T> for FilesystemCache {
         let mut new_file_name = tmp_path.file_name().unwrap().to_owned();
         new_file_name.push("-new");
         tmp_path.set_file_name(new_file_name);
-        let mut file = try!(fs::OpenOptions::new().create(true).write(true).create(true).truncate(true).open(tmp_path));
+        let mut open_options = fs::OpenOptions::new();
+        if cfg!(all(unix)) {
+            open_options.mode(0777 & !self.umask);
+        }
+        let mut file = try!(open_options.create(true).write(true).create(true).truncate(true).open(tmp_path));
         let entry = CacheEntry::new(try!(value.to_cache().map_err(Error::CacheSerializationFailure)), ttl);
         let _ = try!(file.write(&entry.to_string().into_bytes()));
 
