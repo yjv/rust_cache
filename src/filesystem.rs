@@ -117,10 +117,11 @@ impl<T: Cacheable> Cache<T> for FilesystemCache {
         if cfg!(all(unix)) {
             open_options.mode(0777 & !self.umask);
         }
-        let mut file = try!(open_options.create(true).write(true).create(true).truncate(true).open(tmp_path));
+        let mut file = try!(open_options.create(true).write(true).create(true).truncate(true).open(tmp_path.clone()));
         let entry = CacheEntry::new(try!(value.to_cache().map_err(Error::CacheSerializationFailure)), ttl);
         let _ = try!(file.write(&entry.to_string().into_bytes()));
 
+        try!(fs::rename(tmp_path, path));
         Ok(())
     }
 
