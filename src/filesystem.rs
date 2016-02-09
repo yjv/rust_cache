@@ -95,13 +95,13 @@ impl<T: Cacheable> Cache<T> for FilesystemCache {
             return Ok(None);
         }
 
-        let mut file = try!(fs::File::open(path));
+        let mut file = try!(fs::File::open(path.clone()));
         let mut string = String::new();
         try!(file.read_to_string(&mut string));
         let entry = try!(CacheEntry::from_str(&string[..]));
 
         if entry.expired() {
-            return Ok(None);
+            return Ok(try!(fs::remove_file(path).map(|_| None)));
         }
 
         Ok(Some(try!(T::from_cache(&entry.string).map_err(Error::CacheSerializationFailure))))

@@ -34,10 +34,7 @@ impl<T: Cacheable> Cache<T> for HashMapCache {
     fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::Error> {
         self.hash_map.insert(
             key.clone(),
-            CacheEntry {
-                string: try!(item.to_cache()),
-                expires: time::now() + ttl
-            }
+            CacheEntry::new(try!(item.to_cache()), ttl)
         );
         Ok(())
     }
