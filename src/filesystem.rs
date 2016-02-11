@@ -24,6 +24,7 @@ pub struct FilesystemCache {
     umask: u16
 }
 
+#[derive(Debug)]
 pub enum Error<T> {
     ExistsButIsNotDirectory,
     DirectoryNotWritable,
@@ -45,7 +46,7 @@ impl<T> From<ParseCacheEntryError> for Error<T> {
 }
 
 impl FilesystemCache {
-    pub fn new<T>(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error<T>> {
+    pub fn new(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error<String>> {
         let path = path::Path::new(&directory[..]);
 
         if path.exists() && !path.is_dir() {
@@ -56,7 +57,7 @@ impl FilesystemCache {
             let mut builder = fs::DirBuilder::new();
 
             if cfg!(all(unix)) {
-                builder.mode(0777 & !umask);
+                builder.mode(0o777 & !umask);
             }
             try!(builder.recursive(true).create(directory.clone()));
         }
@@ -114,9 +115,14 @@ impl<T: Cacheable> Cache<T> for FilesystemCache {
         new_file_name.push("-new");
         tmp_path.set_file_name(new_file_name);
         let mut open_options = fs::OpenOptions::new();
+        let mut builder = fs::DirBuilder::new();
+
         if cfg!(all(unix)) {
             open_options.mode(0777 & !self.umask);
+            builder.mode(0o777 & !self.umask);
         }
+
+        try!(builder.recursive(true).create(tmp_path.parent().unwrap()));
         let mut file = try!(open_options.create(true).write(true).create(true).truncate(true).open(tmp_path.clone()));
         let entry = CacheEntry::new(try!(value.to_cache().map_err(Error::CacheSerializationFailure)), ttl);
         let _ = try!(file.write(&entry.to_string().into_bytes()));
@@ -147,5 +153,24 @@ impl<T: Cacheable> Cache<T> for FilesystemCache {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::FilesystemCache;
+    use super::time::Duration;
+    use super::super::common::Cache;
+
+    #[test]
+    fn string_filesystem() {
+        let value1: String = "hello".to_string();
+        let value2: String = "goodbye".to_string();
+        let mut cache = FilesystemCache::new("hello".to_string(), "cache".to_string(), 0o002).unwrap();
+        assert_eq!((), cache.save(&"key1".to_string(), &value1, Duration::seconds(34)).unwrap());
+        assert_eq!((), cache.save(&"key2".to_string(), &value2, Duration::weeks(12)).unwrap());
+        assert_eq!(Some(value1), Cache::<String>::fetch(&mut cache, &"key1".to_string()).unwrap());
+        assert_eq!(Some(value2), Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
+        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key3".to_string()).unwrap());
     }
 }
