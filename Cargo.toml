@@ -7,9 +7,11 @@ authors = ["Yosef Deray <yosefderay770@gmail.com>"]
 time = "0.1"
 
 rust-crypto = { version = "0.2.34", optional = true }
+redis = { version = "0.5.2", optional = true }
 
 [features]
 default = ["hash_map"]
 hash_map = []
 filesystem = ["rust-crypto"]
-all = ["hash_map", "filesystem"]
+redis_integration = ["redis"]
+all = ["hash_map", "filesystem", "redis_integration"]

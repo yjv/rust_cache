@@ -12,7 +12,7 @@ pub trait Cacheable: Sized {
     fn from_cache(string: &String) -> Result<Self, Self::Error>;
 }
 
-pub trait Cache<T: Cacheable> {
+pub trait Cache<T> {
     type Error;
     fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::Error>;
     fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::Error>;
