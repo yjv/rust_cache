@@ -64,7 +64,7 @@ mod test {
     use super::super::common::Cache;
 
     #[test]
-    fn string_hash_map() {
+    fn string_redis() {
         let client = redis::Client::open("redis://127.0.0.1/").unwrap();
         let connection = client.get_connection().unwrap();
 
@@ -76,5 +76,9 @@ mod test {
         assert_eq!(Some(value1), Cache::<String>::fetch(&mut cache, &"key1".to_string()).unwrap());
         assert_eq!(Some(value2), Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
         assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key3".to_string()).unwrap());
+        Cache::<String>::delete(&mut cache, &"key".to_string()).unwrap();
+        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key".to_string()).unwrap());
+        Cache::<String>::clear(&mut cache).unwrap();
+        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
     }
 }

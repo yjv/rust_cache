@@ -177,6 +177,10 @@ mod test {
         assert_eq!(Some(value1), Cache::<String>::fetch(&mut cache, &"key1".to_string()).unwrap());
         assert_eq!(Some(value2), Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
         assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key3".to_string()).unwrap());
+        Cache::<String>::delete(&mut cache, &"key".to_string()).unwrap();
+        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key".to_string()).unwrap());
+        Cache::<String>::clear(&mut cache).unwrap();
+        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
         let _ = remove_dir_all("hello");
     }
 }
