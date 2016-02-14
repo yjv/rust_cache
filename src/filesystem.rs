@@ -40,7 +40,15 @@ impl<T> From<ParseCacheEntryError> for Error<T> {
 }
 
 impl FilesystemCache {
-    pub fn new(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error<String>> {
+    pub fn new(directory: String) -> Result<FilesystemCache, Error<String>> {
+        Self::new_with_extension(directory, "cache".to_string())
+    }
+
+    pub fn new_with_extension(directory: String, extension: String) -> Result<FilesystemCache, Error<String>> {
+        Self::new_with_extension_and_umask(directory, extension, 0o002)
+    }
+
+    pub fn new_with_extension_and_umask(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error<String>> {
         let path = path::Path::new(&directory[..]);
 
         if path.exists() && !path.is_dir() {
@@ -161,7 +169,7 @@ mod test {
     fn string_filesystem() {
         let value1: String = "hello".to_string();
         let value2: String = "goodbye".to_string();
-        let mut cache = FilesystemCache::new("hello".to_string(), "cache".to_string(), 0o002).unwrap();
+        let mut cache = FilesystemCache::new("hello".to_string()).unwrap();
         assert_eq!((), cache.save(&"key1".to_string(), &value1, Duration::seconds(34)).unwrap());
         assert_eq!((), cache.save(&"key2".to_string(), &value2, Duration::weeks(12)).unwrap());
         assert_eq!(Some(value1), Cache::<String>::fetch(&mut cache, &"key1".to_string()).unwrap());
