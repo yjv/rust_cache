@@ -3,12 +3,17 @@ use self::time::{Duration, Tm, Timespec, now};
 use std::str::FromStr;
 use std::convert::From;
 
+///
+/// Trait for items that want to be cacheable
+/// allows for special to string method for when they get cached
+/// all items already able to be converted to a from a string have their default impl
 pub trait Cacheable: Sized {
     type Error;
     fn to_cache(&self) -> Result<String, Self::Error>;
     fn from_cache(string: &String) -> Result<Self, Self::Error>;
 }
 
+///Trait to implement for actual cache implementations
 pub trait Cache<T> {
     type Error;
     fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::Error>;
@@ -28,6 +33,9 @@ impl<T: FromStr + ToString + Sized> Cacheable for T {
     }
 }
 
+///This is a useful struct for use inside a cache implentation to keep track
+/// of the data and the expiration together. it can be converted to a form a string iteself for storage in
+/// any medium that accepts strings
 #[derive(Debug, Eq, PartialEq)]
 pub struct CacheEntry {
     pub string: String,
@@ -68,7 +76,7 @@ impl FromStr for CacheEntry {
 }
 
 #[derive(Debug, PartialEq)]
-    pub enum ParseCacheEntryError {
+pub enum ParseCacheEntryError {
     NotEnoughParts,
     TimespecParseError(::std::num::ParseIntError)
 }
@@ -79,6 +87,8 @@ impl From<::std::num::ParseIntError> for ParseCacheEntryError {
     }
 }
 
+///This sturct is for use in places that require a Cache impl but you dont want to actually
+/// cache anything. exmples could be testing and such
 pub struct NullCache;
 
 impl<T: Cacheable> Cache<T> for NullCache {

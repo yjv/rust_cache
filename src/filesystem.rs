@@ -12,6 +12,8 @@ use self::time::Duration;
 use std::convert::From;
 use std::io::{Read, Write};
 
+///Filesystem cache just takes a dir at mimimum and allows you to use that dir
+/// as a caching system
 pub struct FilesystemCache {
     directory: path::PathBuf,
     extension: String,

@@ -5,6 +5,7 @@ use self::time::Duration;
 use self::redis::{Connection, Commands, RedisError};
 use std::convert::From;
 
+///This impl allow syou to use a redis backend for caching
 pub struct RedisCache<'a> {
     connection: &'a Connection
 }

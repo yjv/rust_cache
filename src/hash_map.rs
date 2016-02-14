@@ -9,6 +9,9 @@ pub struct HashMapCache {
     hash_map: HashMap<String, CacheEntry>
 }
 
+///This cache allows for in memory caching. this can be useful for really simple
+/// caching requirements where you dont want to have to use a filesystem or some external
+/// storage but still want caching
 impl HashMapCache {
     pub fn new() -> Self {
         HashMapCache {
