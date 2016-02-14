@@ -12,7 +12,7 @@ documentation = "http://yjv.github.io/rust_cache/rust_cache/"
 time = "^0.1"
 
 rust-crypto = { version = "^0.2", optional = true }
-redis = { version = "^0.3", optional = true }
+redis = { version = "^0.5,0.5.2", optional = true }
 
 [features]
 default = ["hash_map"]

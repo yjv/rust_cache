@@ -55,3 +55,26 @@ impl<'a, T: Cacheable> Cache<T> for RedisCache<'a> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::redis;
+    use super::RedisCache;
+    use super::time::Duration;
+    use super::super::common::Cache;
+
+    #[test]
+    fn string_hash_map() {
+        let client = redis::Client::open("redis://127.0.0.1/").unwrap();
+        let connection = client.get_connection().unwrap();
+
+        let value1: String = "hello".to_string();
+        let value2: String = "goodbye".to_string();
+        let mut cache = RedisCache::new(&connection);
+        let _ = cache.save(&"key1".to_string(), &value1, Duration::seconds(34)).unwrap();
+        let _ = cache.save(&"key2".to_string(), &value2, Duration::weeks(12)).unwrap();
+        assert_eq!(Some(value1), Cache::<String>::fetch(&mut cache, &"key1".to_string()).unwrap());
+        assert_eq!(Some(value2), Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
+        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key3".to_string()).unwrap());
+    }
+}
