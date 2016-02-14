@@ -6,6 +6,7 @@ authors = ["Yosef Deray <yosefderay770@gmail.com>"]
 keywords = ["cache", "redis"]
 license = "MIT"
 repository = "https://github.com/yjv/rust_cache"
+documentation = "http://yjv.github.io/rust_cache/rust_cache/"
 
 [dependencies]
 time = "^0.1"
