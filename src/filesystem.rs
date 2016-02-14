@@ -3,20 +3,14 @@ extern crate time;
 use std::fs;
 use std::path;
 #[cfg(all(unix))]
-use std::os::unix::fs::DirBuilderExt;
-#[cfg(all(unix))]
-use std::os::unix::fs::OpenOptionsExt;
+use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use self::crypto::sha1::Sha1;
 use self::crypto::digest::Digest;
 use std::str::FromStr;
-use common::Cacheable;
-use common::Cache;
-use common::CacheEntry;
-use common::ParseCacheEntryError;
+use common::{Cacheable, Cache, CacheEntry, ParseCacheEntryError};
 use self::time::Duration;
 use std::convert::From;
-use std::io::Read;
-use std::io::Write;
+use std::io::{Read, Write};
 
 pub struct FilesystemCache {
     directory: path::PathBuf,

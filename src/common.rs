@@ -1,8 +1,5 @@
 extern crate time;
-use self::time::Duration;
-use self::time::Tm;
-use self::time::Timespec;
-use self::time::now;
+use self::time::{Duration, Tm, Timespec, now};
 use std::str::FromStr;
 use std::convert::From;
 
