@@ -111,6 +111,13 @@
 <span id="68">68</span>
 <span id="69">69</span>
 <span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
 </pre><pre class='rust '>
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>time</span>;
 <span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>time</span>::<span class='ident'>Duration</span>;
@@ -123,6 +130,9 @@
     <span class='ident'>hash_map</span>: <span class='ident'>HashMap</span><span class='op'>&lt;</span><span class='ident'>String</span>, <span class='ident'>CacheEntry</span><span class='op'>&gt;</span>
 }
 
+<span class='doccomment'>///This cache allows for in memory caching. this can be useful for really simple</span>
+<span class='doccomment'>/// caching requirements where you dont want to have to use a filesystem or some external</span>
+<span class='doccomment'>/// storage but still want caching</span>
 <span class='kw'>impl</span> <span class='ident'>HashMapCache</span> {
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>() <span class='op'>-&gt;</span> <span class='kw'>Self</span> {
         <span class='ident'>HashMapCache</span> {
@@ -180,6 +190,10 @@
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Ok</span>(<span class='prelude-val'>Some</span>(<span class='ident'>value1</span>)), <span class='ident'>Cache</span>::<span class='op'>&lt;</span><span class='ident'>String</span><span class='op'>&gt;</span>::<span class='ident'>fetch</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>cache</span>, <span class='kw-2'>&amp;</span><span class='string'>&quot;key1&quot;</span>.<span class='ident'>to_string</span>()));
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Ok</span>(<span class='prelude-val'>Some</span>(<span class='ident'>value2</span>)), <span class='ident'>Cache</span>::<span class='op'>&lt;</span><span class='ident'>String</span><span class='op'>&gt;</span>::<span class='ident'>fetch</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>cache</span>, <span class='kw-2'>&amp;</span><span class='string'>&quot;key2&quot;</span>.<span class='ident'>to_string</span>()));
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>Ok</span>(<span class='prelude-val'>None</span>), <span class='ident'>Cache</span>::<span class='op'>&lt;</span><span class='ident'>String</span><span class='op'>&gt;</span>::<span class='ident'>fetch</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>cache</span>, <span class='kw-2'>&amp;</span><span class='string'>&quot;key3&quot;</span>.<span class='ident'>to_string</span>()));
+        <span class='ident'>Cache</span>::<span class='op'>&lt;</span><span class='ident'>String</span><span class='op'>&gt;</span>::<span class='ident'>delete</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>cache</span>, <span class='kw-2'>&amp;</span><span class='string'>&quot;key&quot;</span>.<span class='ident'>to_string</span>()).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>None</span>, <span class='ident'>Cache</span>::<span class='op'>&lt;</span><span class='ident'>String</span><span class='op'>&gt;</span>::<span class='ident'>fetch</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>cache</span>, <span class='kw-2'>&amp;</span><span class='string'>&quot;key&quot;</span>.<span class='ident'>to_string</span>()).<span class='ident'>unwrap</span>());
+        <span class='ident'>Cache</span>::<span class='op'>&lt;</span><span class='ident'>String</span><span class='op'>&gt;</span>::<span class='ident'>clear</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>cache</span>).<span class='ident'>unwrap</span>();
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='prelude-val'>None</span>, <span class='ident'>Cache</span>::<span class='op'>&lt;</span><span class='ident'>String</span><span class='op'>&gt;</span>::<span class='ident'>fetch</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>cache</span>, <span class='kw-2'>&amp;</span><span class='string'>&quot;key2&quot;</span>.<span class='ident'>to_string</span>()).<span class='ident'>unwrap</span>());
     }
 }</pre>
 </section>

@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Error",""]],"struct":[["FilesystemCache",""]]});
+initSidebarItems({"enum":[["Error",""]],"struct":[["FilesystemCache","Filesystem cache just takes a dir at mimimum and allows you to use that dir as a caching system"]]});

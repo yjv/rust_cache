@@ -46,14 +46,15 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-16' class='srclink' href='../../src/rust_cache/common.rs.html#12-18' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-16' class='srclink' href='../../src/rust_cache/common.rs.html#17-23' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait Cache&lt;T&gt; {
     type Error;
     fn <a href='#tymethod.fetch' class='fnname'>fetch</a>(&amp;mut self, key: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;T&gt;, Self::<a class='trait' href='../../rust_cache/common/trait.Cache.html' title='rust_cache::common::Cache'>Error</a>&gt;;
     fn <a href='#tymethod.save' class='fnname'>save</a>(&amp;mut self, key: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, item: &amp;T, ttl: <a class='struct' href='https://doc.rust-lang.org/time/time/duration/struct.Duration.html' title='time::duration::Duration'>Duration</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, Self::<a class='trait' href='../../rust_cache/common/trait.Cache.html' title='rust_cache::common::Cache'>Error</a>&gt;;
     fn <a href='#tymethod.delete' class='fnname'>delete</a>(&amp;mut self, key: &amp;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, Self::<a class='trait' href='../../rust_cache/common/trait.Cache.html' title='rust_cache::common::Cache'>Error</a>&gt;;
     fn <a href='#tymethod.clear' class='fnname'>clear</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, Self::<a class='trait' href='../../rust_cache/common/trait.Cache.html' title='rust_cache::common::Cache'>Error</a>&gt;;
-}</pre>
+}</pre><div class='docblock'><p>Trait to implement for actual cache implementations</p>
+</div>
             <h2 id='associated-types'>Associated Types</h2>
             <div class='methods'>
         <h3 id='associatedtype.Error' class='method stab '><code>type Error</code></h3></div>

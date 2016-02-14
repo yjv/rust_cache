@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Error",""]],"struct":[["RedisCache",""]]});
+initSidebarItems({"enum":[["Error",""]],"struct":[["RedisCache","This impl allow syou to use a redis backend for caching"]]});

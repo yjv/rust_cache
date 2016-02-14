@@ -46,14 +46,17 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-4' class='srclink' href='../../src/rust_cache/common.rs.html#1-146' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-4' class='srclink' href='../../src/rust_cache/common.rs.html#1-156' title='goto source code'>[src]</a></span></h1>
 <h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
                     <tr class=' module-item'>
                         <td><a class='struct' href='struct.CacheEntry.html'
                                title='rust_cache::common::CacheEntry'>CacheEntry</a></td>
                         <td class='docblock short'>
-                             
+                             <p>This is a useful struct for use inside a cache implentation to keep track
+of the data and the expiration together. it can be converted to a form a string iteself for storage in
+any medium that accepts strings</p>
+
                         </td>
                     </tr>
                 
@@ -61,7 +64,9 @@
                         <td><a class='struct' href='struct.NullCache.html'
                                title='rust_cache::common::NullCache'>NullCache</a></td>
                         <td class='docblock short'>
-                             
+                             <p>This sturct is for use in places that require a Cache impl but you dont want to actually
+cache anything. exmples could be testing and such</p>
+
                         </td>
                     </tr>
                 </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
@@ -79,7 +84,8 @@
                         <td><a class='trait' href='trait.Cache.html'
                                title='rust_cache::common::Cache'>Cache</a></td>
                         <td class='docblock short'>
-                             
+                             <p>Trait to implement for actual cache implementations</p>
+
                         </td>
                     </tr>
                 
