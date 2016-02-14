@@ -1,6 +1,6 @@
 [package]
 name = "rust_cache"
-version = "0.1.0"
+version = "0.2.0"
 description = "library that defines a standard trait for caches and cached items along with impls for caching backends"
 authors = ["Yosef Deray <yosefderay770@gmail.com>"]
 keywords = ["cache", "redis"]
