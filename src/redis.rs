@@ -4,6 +4,7 @@ use super::common::{Cacheable, Cache};
 use self::time::Duration;
 use self::redis::{Connection, Commands, RedisError};
 use std::convert::From;
+use std::any::Any;
 
 ///This impl allow syou to use a redis backend for caching
 pub struct RedisCache<'a> {
@@ -11,12 +12,12 @@ pub struct RedisCache<'a> {
 }
 
 #[derive(Debug)]
-pub enum Error<T> {
-    CacheSerializationFailure(T),
+pub enum Error {
+    CacheSerializationFailure(Box<Any>),
     RedisError(RedisError)
 }
 
-impl<T> From<RedisError> for Error<T> {
+impl From<RedisError> for Error {
     fn from(error: RedisError) -> Self {
         Error::RedisError(error)
     }
@@ -30,18 +31,18 @@ impl<'a> RedisCache<'a> {
     }
 }
 
-impl<'a, T: Cacheable> Cache<T> for RedisCache<'a> {
-    type Error = Error<<T as Cacheable>::Error>;
-    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::Error> {
+impl<'a> Cache for RedisCache<'a> {
+    type Error = Error;
+    fn fetch<T: Cacheable>(&mut self, key: &String) -> Result<Option<T>, Self::Error> {
         if let Some(ref value) = try!(self.connection.get(&key[..])) {
-            Ok(Some(try!(T::from_cache(value).map_err(Error::CacheSerializationFailure))))
+            Ok(Some(try!(T::from_cache(value).map_err(|e| Error::CacheSerializationFailure(Box::new(e))))))
         } else {
             Ok(None)
         }
     }
 
-    fn save(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), Self::Error> {
-        try!(self.connection.set_ex(key.clone(), try!(value.to_cache().map_err(Error::CacheSerializationFailure)), ttl.num_seconds() as usize));
+    fn save<T: Cacheable>(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), Self::Error> {
+        try!(self.connection.set_ex(key.clone(), try!(value.to_cache().map_err(|e| Error::CacheSerializationFailure(Box::new(e)))), ttl.num_seconds() as usize));
         Ok(())
     }
 
@@ -73,12 +74,12 @@ mod test {
         let mut cache = RedisCache::new(&connection);
         let _ = cache.save(&"key1".to_string(), &value1, Duration::seconds(34)).unwrap();
         let _ = cache.save(&"key2".to_string(), &value2, Duration::weeks(12)).unwrap();
-        assert_eq!(Some(value1), Cache::<String>::fetch(&mut cache, &"key1".to_string()).unwrap());
-        assert_eq!(Some(value2), Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
-        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key3".to_string()).unwrap());
-        Cache::<String>::delete(&mut cache, &"key".to_string()).unwrap();
-        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key".to_string()).unwrap());
-        Cache::<String>::clear(&mut cache).unwrap();
-        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
+        assert_eq!(Some(value1), Cache::fetch::<String>(&mut cache, &"key1".to_string()).unwrap());
+        assert_eq!(Some(value2), Cache::fetch::<String>(&mut cache, &"key2".to_string()).unwrap());
+        assert_eq!(None, Cache::fetch::<String>(&mut cache, &"key3".to_string()).unwrap());
+        Cache::delete(&mut cache, &"key".to_string()).unwrap();
+        assert_eq!(None, Cache::fetch::<String>(&mut cache, &"key".to_string()).unwrap());
+        Cache::clear(&mut cache).unwrap();
+        assert_eq!(None, Cache::fetch::<String>(&mut cache, &"key2".to_string()).unwrap());
     }
 }

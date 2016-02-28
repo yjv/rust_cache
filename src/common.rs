@@ -2,27 +2,28 @@ extern crate time;
 use self::time::{Duration, Tm, Timespec, now};
 use std::str::FromStr;
 use std::convert::From;
+use std::any::Any;
 
 ///
 /// Trait for items that want to be cacheable
 /// allows for special to string method for when they get cached
 /// all items already able to be converted to a from a string have their default impl
 pub trait Cacheable: Sized {
-    type Error;
+    type Error: Any;
     fn to_cache(&self) -> Result<String, Self::Error>;
     fn from_cache(string: &String) -> Result<Self, Self::Error>;
 }
 
 ///Trait to implement for actual cache implementations
-pub trait Cache<T> {
+pub trait Cache {
     type Error;
-    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::Error>;
-    fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::Error>;
+    fn fetch<T: Cacheable>(&mut self, key: &String) -> Result<Option<T>, Self::Error>;
+    fn save<T: Cacheable>(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::Error>;
     fn delete(&mut self, key: &String) -> Result<(), Self::Error>;
     fn clear(&mut self) -> Result<(), Self::Error>;
 }
 
-impl<T: FromStr + ToString + Sized> Cacheable for T {
+impl<T: FromStr + ToString + Sized> Cacheable for T where T::Err: Any {
     type Error = T::Err;
     fn to_cache(&self) -> Result<String, Self::Error> {
         Ok(self.to_string())
@@ -91,13 +92,13 @@ impl From<::std::num::ParseIntError> for ParseCacheEntryError {
 /// cache anything. exmples could be testing and such
 pub struct NullCache;
 
-impl<T: Cacheable> Cache<T> for NullCache {
+impl Cache for NullCache {
     type Error = ();
-    fn fetch(&mut self, _: &String) -> Result<Option<T>, Self::Error> {
+    fn fetch<T>(&mut self, _: &String) -> Result<Option<T>, Self::Error> {
         Ok(None)
     }
 
-    fn save(&mut self, _: &String, _: &T, _: Duration) -> Result<(), Self::Error> {
+    fn save<T>(&mut self, _: &String, _: &T, _: Duration) -> Result<(), Self::Error> {
         Ok(())
     }
 
@@ -124,9 +125,9 @@ mod test {
     fn null_cache() {
         let mut cache = NullCache;
         assert_eq!(Ok(()), cache.save(&"key2".to_string(), &"value1".to_string(), Duration::seconds(34)));
-        assert_eq!(Ok(None), Cache::<String>::fetch(&mut cache, &"key1".to_string()));
-        assert_eq!(Ok(()), Cache::<String>::delete(&mut cache, &"key3".to_string()));
-        assert_eq!(Ok(()), Cache::<String>::clear(&mut cache));
+        assert_eq!(Ok(None), Cache::fetch::<String>(&mut cache, &"key1".to_string()));
+        assert_eq!(Ok(()), Cache::delete(&mut cache, &"key3".to_string()));
+        assert_eq!(Ok(()), Cache::clear(&mut cache));
     }
 
     #[test]

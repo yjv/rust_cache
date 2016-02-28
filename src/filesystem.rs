@@ -11,6 +11,7 @@ use common::{Cacheable, Cache, CacheEntry, ParseCacheEntryError};
 use self::time::Duration;
 use std::convert::From;
 use std::io::{Read, Write};
+use std::any::Any;
 
 ///Filesystem cache just takes a dir at mimimum and allows you to use that dir
 /// as a caching system
@@ -21,36 +22,36 @@ pub struct FilesystemCache {
 }
 
 #[derive(Debug)]
-pub enum Error<T> {
+pub enum Error {
     ExistsButIsNotDirectory,
     DirectoryNotWritable,
     Io(::std::io::Error),
     CacheEntryFailedToParse(ParseCacheEntryError),
-    CacheSerializationFailure(T)
+    CacheSerializationFailure(Box<Any>)
 }
 
-impl<T> From<::std::io::Error> for Error<T> {
+impl From<::std::io::Error> for Error {
     fn from(error: ::std::io::Error) -> Self {
         Error::Io(error)
     }
 }
 
-impl<T> From<ParseCacheEntryError> for Error<T> {
+impl From<ParseCacheEntryError> for Error {
     fn from(error: ParseCacheEntryError) -> Self {
         Error::CacheEntryFailedToParse(error)
     }
 }
 
 impl FilesystemCache {
-    pub fn new(directory: String) -> Result<FilesystemCache, Error<String>> {
+    pub fn new(directory: String) -> Result<FilesystemCache, Error> {
         Self::new_with_extension(directory, "cache".to_string())
     }
 
-    pub fn new_with_extension(directory: String, extension: String) -> Result<FilesystemCache, Error<String>> {
+    pub fn new_with_extension(directory: String, extension: String) -> Result<FilesystemCache, Error> {
         Self::new_with_extension_and_umask(directory, extension, 0o002)
     }
 
-    pub fn new_with_extension_and_umask(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error<String>> {
+    pub fn new_with_extension_and_umask(directory: String, extension: String, umask: u16) -> Result<FilesystemCache, Error> {
         let path = path::Path::new(&directory[..]);
 
         if path.exists() && !path.is_dir() {
@@ -91,9 +92,9 @@ impl FilesystemCache {
     }
 }
 
-impl<T: Cacheable> Cache<T> for FilesystemCache {
-    type Error = Error<<T as Cacheable>::Error>;
-    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::Error> {
+impl Cache for FilesystemCache {
+    type Error = Error;
+    fn fetch<T: Cacheable>(&mut self, key: &String) -> Result<Option<T>, Self::Error> {
         let path = self.get_file_path(key);
 
         if !path.is_file() {
@@ -109,10 +110,10 @@ impl<T: Cacheable> Cache<T> for FilesystemCache {
             return Ok(try!(fs::remove_file(path).map(|_| None)));
         }
 
-        Ok(Some(try!(T::from_cache(&entry.string).map_err(Error::CacheSerializationFailure))))
+        Ok(Some(try!(T::from_cache(&entry.string).map_err(|e| Error::CacheSerializationFailure(Box::new(e))))))
     }
 
-    fn save(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), Self::Error> {
+    fn save<T: Cacheable>(&mut self, key: &String, value: &T, ttl: Duration) -> Result<(), Self::Error> {
         let path = self.get_file_path(key);
         let mut tmp_path = path.clone();
         let mut new_file_name = tmp_path.file_name().unwrap().to_owned();
@@ -128,7 +129,7 @@ impl<T: Cacheable> Cache<T> for FilesystemCache {
 
         try!(builder.recursive(true).create(tmp_path.parent().unwrap()));
         let mut file = try!(open_options.create(true).write(true).create(true).truncate(true).open(tmp_path.clone()));
-        let entry = CacheEntry::new(try!(value.to_cache().map_err(Error::CacheSerializationFailure)), ttl);
+        let entry = CacheEntry::new(try!(value.to_cache().map_err(|e| Error::CacheSerializationFailure(Box::new(e)))), ttl);
         let _ = try!(file.write(&entry.to_string().into_bytes()));
 
         try!(fs::rename(tmp_path, path));
@@ -174,13 +175,13 @@ mod test {
         let mut cache = FilesystemCache::new("hello".to_string()).unwrap();
         assert_eq!((), cache.save(&"key1".to_string(), &value1, Duration::seconds(34)).unwrap());
         assert_eq!((), cache.save(&"key2".to_string(), &value2, Duration::weeks(12)).unwrap());
-        assert_eq!(Some(value1), Cache::<String>::fetch(&mut cache, &"key1".to_string()).unwrap());
-        assert_eq!(Some(value2), Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
-        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key3".to_string()).unwrap());
-        Cache::<String>::delete(&mut cache, &"key".to_string()).unwrap();
-        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key".to_string()).unwrap());
-        Cache::<String>::clear(&mut cache).unwrap();
-        assert_eq!(None, Cache::<String>::fetch(&mut cache, &"key2".to_string()).unwrap());
+        assert_eq!(Some(value1), Cache::fetch::<String>(&mut cache, &"key1".to_string()).unwrap());
+        assert_eq!(Some(value2), Cache::fetch::<String>(&mut cache, &"key2".to_string()).unwrap());
+        assert_eq!(None, Cache::fetch::<String>(&mut cache, &"key3".to_string()).unwrap());
+        Cache::delete(&mut cache, &"key".to_string()).unwrap();
+        assert_eq!(None, Cache::fetch::<String>(&mut cache, &"key".to_string()).unwrap());
+        Cache::clear(&mut cache).unwrap();
+        assert_eq!(None, Cache::fetch::<String>(&mut cache, &"key2".to_string()).unwrap());
         let _ = remove_dir_all("hello");
     }
 }
