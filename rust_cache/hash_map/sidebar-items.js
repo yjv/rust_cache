@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["HashMapCache",""]]});
+initSidebarItems({"enum":[["Error",""]],"struct":[["HashMapCache",""]]});
