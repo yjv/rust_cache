@@ -98,37 +98,46 @@ impl HashMapCache {
         }
     }
 }
+enum HashMapCacheError<T: Cacheable> {
+    ItemFromCache(T::FromError),
+    ItemToCache(T::ToError),
+}
 
 impl<T: Cacheable> Cache<T> for HashMapCache {
-    fn fetch<U>(&mut self, key: &String) -> Result<Option<T>, U> {
+    type FetchError = HashMapCacheError<T>;
+    type SaveError = HashMapCacheError<T>;
+    type DeleteError = ();
+    type ClearError = ();
+
+    fn fetch(&mut self, key: &String) -> Result<Option<T>, Self::FetchError> {
         Ok(if let Some(entry) = self.hash_map.get(key) {
             if entry.expired() {
                 None
             } else {
-                Some(try!(T::from_cache(&entry.string)))
+                Some(try!(T::from_cache(&entry.string).map_err(HashMapCacheError::ItemFromCache)))
             }
         } else {
             None
         })
     }
 
-    fn save<U>(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), U> {
+    fn save(&mut self, key: &String, item: &T, ttl: Duration) -> Result<(), Self::SaveError> {
         self.hash_map.insert(
             key.clone(),
             CacheEntry {
-                string: try!(item.to_cache()),
+                string: try!(item.to_cache().map_err(HashMapCacheError::ItemToCache)),
                 expires: time::now() + ttl
             }
         );
         Ok(())
     }
 
-    fn delete<U>(&mut self, key: &String) -> Result<(), U> {
+    fn delete(&mut self, key: &String) -> Result<(), Self::DeleteError> {
         self.hash_map.remove(key);
         Ok(())
     }
 
-    fn clear<U>(&mut self) -> Result<(), U> {
+    fn clear(&mut self) -> Result<(), Self::ClearError> {
         self.hash_map.clear();
         Ok(())
     }
@@ -137,20 +146,24 @@ impl<T: Cacheable> Cache<T> for HashMapCache {
 pub struct NullCache;
 
 impl<T: Cacheable> Cache<T> for NullCache {
+    type FetchError = ();
+    type SaveError = ();
+    type DeleteError = ();
+    type ClearError = ();
 
-    fn fetch<U>(&mut self, _: &String) -> Result<Option<T>, U> {
+    fn fetch(&mut self, _: &String) -> Result<Option<T>, Self::FetchError> {
         Ok(None)
     }
 
-    fn save<U>(&mut self, _: &String, _: &T, _: Duration) -> Result<(), U> {
+    fn save(&mut self, _: &String, _: &T, _: Duration) -> Result<(), Self::SaveError> {
         Ok(())
     }
 
-    fn delete<U>(&mut self, _: &String) -> Result<(), U> {
+    fn delete(&mut self, _: &String) -> Result<(), Self::DeleteError> {
         Ok(())
     }
 
-    fn clear<U>(&mut self) -> Result<(), U> {
+    fn clear(&mut self) -> Result<(), Self::ClearError> {
         Ok(())
     }
 }
