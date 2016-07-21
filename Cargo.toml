@@ -1,8 +1,22 @@
 [package]
 name = "rust_cache"
-version = "0.1.0"
+version = "0.3.0"
+description = "library that defines a standard trait for caches and cached items along with impls for caching backends"
 authors = ["Yosef Deray <yosefderay770@gmail.com>"]
+keywords = ["cache", "redis"]
+license = "MIT"
+repository = "https://github.com/yjv/rust_cache"
+documentation = "http://yjv.github.io/rust_cache/rust_cache/"
 
 [dependencies]
-time = "0.1"
-rust-crypto = "0.2.34"
+time = "^0.1"
+
+rust-crypto = { version = "^0.2", optional = true }
+redis = { version = "^0.5,0.5.2", optional = true }
+
+[features]
+default = ["hash_map"]
+hash_map = []
+filesystem = ["rust-crypto"]
+redis_integration = ["redis"]
+all = ["hash_map", "filesystem", "redis_integration"]
